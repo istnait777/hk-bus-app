@@ -7,8 +7,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#d32f2f" />
   <title>HK Bus ETA</title>
-  <link rel="manifest" href="manifest.json?v=3" />
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="manifest" href="manifest.json?v=4" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <header>
@@ -29,11 +29,11 @@
       <div id="nearbyList"></div>
     </section>
 
-    <!-- Tab 3: Bookmarked Stops -->
+    <!-- Tab 3: Bookmarked Stops + 1-Min Alert -->
     <section id="savedSection" class="hidden">
       <div class="section-header">
         <strong>Bookmarked Stops</strong>
-        <span id="savedStatus">Auto-refreshing</span>
+        <span id="savedStatus">Keep open for 1m alert</span>
       </div>
       <div id="savedList"></div>
     </section>
@@ -57,6 +57,16 @@
       <div id="stopList" class="stop-list"></div>
     </section>
   </main>
+
+  <!-- Pop-Up Window Modal for 1-Minute Bus Alert -->
+  <div id="alertModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-icon">🚌🔔</div>
+      <h2 id="alertModalTitle">Bus Arriving in 1 Min!</h2>
+      <p id="alertModalBody">Your bus is almost at the stop.</p>
+      <button id="alertModalOkBtn" class="modal-ok-btn">Got It</button>
+    </div>
+  </div>
 
   <!-- Floating Quick "Time Remain" Bar Above Bottom Nav -->
   <div id="floatingRemainBar" class="floating-remain hidden">
@@ -86,6 +96,6 @@
     </button>
   </nav>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

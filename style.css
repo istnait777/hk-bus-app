@@ -1,5 +1,5 @@
 * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; background: #f2f4f7; color: #1a1a1a; padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
+body { margin: 0; background: #f2f4f7; color: #1a1a1a; padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
 
 header {
   background: #d32f2f;
@@ -54,7 +54,7 @@ main { max-width: 600px; margin: 0 auto; padding: 12px; }
 }
 #backBtn { background: #f0f2f5; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
 #selectedRouteTitle { font-size: 0.95rem; text-align: center; flex: 1; padding: 0 8px; }
-#refreshStatus, #gpsStatus, #savedStatus { font-size: 0.78rem; color: #2e7d32; font-weight: 700; }
+#refreshStatus, #gpsStatus, #savedStatus, #remainStatus { font-size: 0.75rem; color: #2e7d32; font-weight: 700; }
 
 .stop-item {
   background: white;
@@ -64,7 +64,7 @@ main { max-width: 600px; margin: 0 auto; padding: 12px; }
   border-left: 4px solid #d32f2f;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
-.stop-header { font-weight: 600; font-size: 0.96rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.stop-header { font-weight: 600; font-size: 0.96rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .dist-tag { background: #e3f2fd; color: #1565c0; font-size: 0.78rem; padding: 3px 8px; border-radius: 12px; font-weight: 700; white-space: nowrap; }
 
 .star-btn {
@@ -78,8 +78,41 @@ main { max-width: 600px; margin: 0 auto; padding: 12px; }
 }
 .star-btn.bookmarked { color: #f59e0b; }
 
+/* 1-Min Alert Toggle Button in Saved Routes */
+.alert-toggle-btn {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.alert-toggle-btn.active {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #f59e0b;
+  animation: pulseBorder 1.8s infinite;
+}
+@keyframes pulseBorder {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
+}
+
 .eta-box { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.eta-badge { background: #ffebee; color: #b71c1c; padding: 5px 10px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
+.eta-badge {
+  background: #ffebee;
+  color: #b71c1c;
+  padding: 6px 11px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 1px solid #ffcdd2;
+  cursor: pointer;
+}
+.eta-badge:active { transform: scale(0.96); background: #ffcdd2; }
 .eta-badge span { font-weight: 400; font-size: 0.8rem; color: #555; }
 .no-eta { font-size: 0.85rem; color: #777; }
 
@@ -107,6 +140,104 @@ main { max-width: 600px; margin: 0 auto; padding: 12px; }
   border-radius: 12px;
 }
 
+/* Pop-Up Window Alert Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-card {
+  background: #fff;
+  width: 100%;
+  max-width: 340px;
+  border-radius: 18px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border-top: 6px solid #d32f2f;
+}
+.modal-icon { font-size: 2.6rem; margin-bottom: 8px; }
+.modal-card h2 { margin: 0 0 8px; font-size: 1.3rem; color: #d32f2f; }
+.modal-card p { margin: 0 0 20px; font-size: 0.98rem; color: #333; line-height: 1.4; }
+.modal-ok-btn {
+  width: 100%;
+  background: #d32f2f;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Large Time Remain Countdown Card */
+.remain-card {
+  background: white;
+  border-radius: 16px;
+  padding: 22px 18px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  border-top: 5px solid #d32f2f;
+}
+.remain-route-pill {
+  display: inline-block;
+  background: #d32f2f;
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 900;
+  padding: 4px 14px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.remain-big-time {
+  font-size: 3.1rem;
+  font-weight: 900;
+  color: #d32f2f;
+  margin: 14px 0 4px;
+  line-height: 1;
+}
+.remain-sub-clock { font-size: 0.95rem; color: #555; margin-bottom: 16px; }
+.remain-upcoming-list { border-top: 1px solid #eee; padding-top: 12px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.stop-track-btn { margin-top: 16px; background: #f0f2f5; color: #333; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+
+/* Floating Time Remain Bar Above Bottom Nav */
+.floating-remain {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  z-index: 28;
+  background: #1e293b;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+  cursor: pointer;
+}
+.floating-remain-info { font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.floating-remain-info strong { color: #ff8a80; font-size: 1rem; }
+.floating-close {
+  background: rgba(255,255,255,0.18);
+  border: none;
+  color: #fff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  margin-left: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -125,7 +256,7 @@ main { max-width: 600px; margin: 0 auto; padding: 12px; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #757575;
   cursor: pointer;
@@ -133,4 +264,4 @@ main { max-width: 600px; margin: 0 auto; padding: 12px; }
   padding: 4px 0;
 }
 .nav-btn.active { color: #d32f2f; }
-.nav-icon { font-size: 1.25rem; margin-bottom: 2px; }
+.nav-icon { font-size: 1.2rem; margin-bottom: 2px; }

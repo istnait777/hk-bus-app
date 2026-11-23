@@ -7,6 +7,107 @@ let allRoutes = [];
 let stopsMap = {};
 let activeEtaInterval = null;
 let globalRemainInterval = null;
+let alertWatchInterval = null;
+let activeAlerts = {}; // { bookmarkId: true }
+
+// --- Audio Beep & Pop-Up Window Alert ---
+function playAlertBeep() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch (e) {}
+}
+
+function triggerPopupAlert(bookmark, minsText) {
+  playAlertBeep();
+  if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+
+  const title = `Route ${bookmark.route} • ${minsText}`;
+  const body = `Bus to ${bookmark.destEn} (${bookmark.destTc}) is arriving at ${bookmark.stopNameEn} (${bookmark.stopNameTc})!`;
+
+  // 1. Show custom pop-up modal window inside app
+  document.getElementById('alertModalTitle').textContent = title;
+  document.getElementById('alertModalBody').textContent = body;
+  document.getElementById('alertModal').classList.remove('hidden');
+
+  // 2. Also fire browser pop-up alert window
+  setTimeout(() => {
+    alert(`🔔 ${title}\n${body}`);
+  }, 100);
+}
+
+function toggleOneMinAlert(id) {
+  if (activeAlerts[id]) {
+    delete activeAlerts[id];
+  } else {
+    activeAlerts[id] = true;
+    // Unlock audio context on iOS tap
+    playAlertBeep();
+  }
+
+  const btn = document.getElementById(`alert-btn-${id}`);
+  if (btn) {
+    btn.classList.toggle('active', !!activeAlerts[id]);
+    btn.textContent = activeAlerts[id] ? '🔔 1m ON' : '🔕 1m Alert';
+  }
+  startAlertWatcher();
+}
+
+function startAlertWatcher() {
+  clearInterval(alertWatchInterval);
+  const alertIds = Object.keys(activeAlerts);
+  if (!alertIds.length) return;
+
+  const checkAlerts = async () => {
+    const bookmarks = getBookmarks();
+    const now = new Date();
+
+    for (const id of Object.keys(activeAlerts)) {
+      const b = bookmarks.find(item => item.id === id);
+      if (!b) {
+        delete activeAlerts[id];
+        continue;
+      }
+
+      try {
+        const res = await fetch(`${KMB_BASE}/eta/${b.stopId}/${b.route}/${b.serviceType}`);
+        const json = await res.json();
+        const validEtas = json.data.filter(e => e.dir === b.bound && e.eta);
+
+        if (validEtas.length) {
+          const diffSec = Math.round((new Date(validEtas[0].eta) - now) / 1000);
+          // Trigger when remaining time is 1 minute or less (<= 75 seconds)
+          if (diffSec <= 75 && diffSec >= -30) {
+            delete activeAlerts[id]; // Auto-turn off after alerting once
+            const btn = document.getElementById(`alert-btn-${id}`);
+            if (btn) {
+              btn.classList.remove('active');
+              btn.textContent = '🔕 1m Alert';
+            }
+            const label = diffSec <= 20 ? 'Arriving Now' : '1 Min Remaining';
+            triggerPopupAlert(b, label);
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!Object.keys(activeAlerts).length) {
+      clearInterval(alertWatchInterval);
+    }
+  };
+
+  checkAlerts();
+  alertWatchInterval = setInterval(checkAlerts, 10000); // Check every 10s
+}
 
 // --- Bookmark Storage Helpers ---
 function getBookmarks() {
@@ -25,6 +126,7 @@ function toggleBookmark(btnEl, route, bound, serviceType, stopId, destEn, destTc
 
   if (existsIndex >= 0) {
     bookmarks.splice(existsIndex, 1);
+    delete activeAlerts[id];
     if (btnEl) {
       btnEl.classList.remove('bookmarked');
       btnEl.textContent = '☆';
@@ -484,6 +586,7 @@ function findNearbyStops() {
   );
 }
 
+// --- Tab 3: Bookmarked Stops with "🔔 1m Alert" Button ---
 async function showSavedStops() {
   hideAllSections();
   setActiveTab('saved');
@@ -502,24 +605,33 @@ async function showSavedStops() {
     return;
   }
 
-  savedListEl.innerHTML = bookmarks.map(b => `
-    <div class="stop-item" id="saved-card-${b.id}">
-      <div class="stop-header">
-        <div>
-          <span class="saved-route-badge">${b.route}</span>
-          <span>→ ${b.destEn} (${b.destTc})</span>
-          <div style="margin-top:6px; font-size:0.9rem; color:#444;">
-            📍 ${b.stopNameEn} (${b.stopNameTc})
+  savedListEl.innerHTML = bookmarks.map(b => {
+    const isAlertOn = !!activeAlerts[b.id];
+    return `
+      <div class="stop-item" id="saved-card-${b.id}">
+        <div class="stop-header">
+          <div style="flex:1;">
+            <span class="saved-route-badge">${b.route}</span>
+            <span>→ ${b.destEn} (${b.destTc})</span>
+            <div style="margin-top:6px; font-size:0.9rem; color:#444;">
+              📍 ${b.stopNameEn} (${b.stopNameTc})
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button id="alert-btn-${b.id}" class="alert-toggle-btn ${isAlertOn ? 'active' : ''}"
+              onclick="toggleOneMinAlert('${b.id}')">
+              ${isAlertOn ? '🔔 1m ON' : '🔕 1m Alert'}
+            </button>
+            <button class="star-btn bookmarked" title="Remove bookmark"
+              onclick="removeSavedCard('${b.id}', '${b.route}', '${b.bound}', '${b.serviceType}', '${b.stopId}')">
+              ★
+            </button>
           </div>
         </div>
-        <button class="star-btn bookmarked" title="Remove bookmark"
-          onclick="removeSavedCard('${b.id}', '${b.route}', '${b.bound}', '${b.serviceType}', '${b.stopId}')">
-          ★
-        </button>
+        <div class="eta-box" id="saved-eta-${b.id}">Fetching live ETA...</div>
       </div>
-      <div class="eta-box" id="saved-eta-${b.id}">Fetching live ETA...</div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   const updateSavedETAs = async () => {
     const now = new Date();
@@ -587,5 +699,8 @@ document.getElementById('tabRemain').addEventListener('click', showRemainTab);
 document.getElementById('backBtn').addEventListener('click', showRoutesHome);
 document.getElementById('floatingRemainBar').addEventListener('click', showRemainTab);
 document.getElementById('floatingClearBtn').addEventListener('click', clearTrackedBus);
+document.getElementById('alertModalOkBtn').addEventListener('click', () => {
+  document.getElementById('alertModal').classList.add('hidden');
+});
 
 initApp();
