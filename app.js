@@ -1,10 +1,12 @@
 const KMB_BASE = 'https://data.etabus.gov.hk/v1/transport/kmb';
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 const BOOKMARKS_KEY = 'hk_bus_bookmarks_v1';
+const TRACKED_KEY = 'hk_bus_tracked_v1';
 
 let allRoutes = [];
 let stopsMap = {};
 let activeEtaInterval = null;
+let globalRemainInterval = null;
 
 // --- Bookmark Storage Helpers ---
 function getBookmarks() {
@@ -49,6 +51,159 @@ function toggleBookmark(btnEl, route, bound, serviceType, stopId, destEn, destTc
   localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
 }
 
+// --- Track "Time Remain" Helpers ---
+function getTrackedBus() {
+  return JSON.parse(localStorage.getItem(TRACKED_KEY) || 'null');
+}
+
+function trackStopRemain(route, bound, serviceType, stopId, destEn, destTc) {
+  const stopInfo = stopsMap[stopId] || { name_en: 'Selected Stop', name_tc: '' };
+  const tracked = {
+    route,
+    bound,
+    serviceType,
+    stopId,
+    stopNameEn: stopInfo.name_en,
+    stopNameTc: stopInfo.name_tc,
+    destEn,
+    destTc
+  };
+  localStorage.setItem(TRACKED_KEY, JSON.stringify(tracked));
+  startFloatingRemainTracker();
+  showRemainTab();
+}
+
+function clearTrackedBus(e) {
+  if (e) e.stopPropagation();
+  localStorage.removeItem(TRACKED_KEY);
+  clearInterval(globalRemainInterval);
+  document.getElementById('floatingRemainBar').classList.add('hidden');
+  if (!document.getElementById('remainSection').classList.contains('hidden')) {
+    showRemainTab();
+  }
+}
+
+async function startFloatingRemainTracker() {
+  clearInterval(globalRemainInterval);
+  const tracked = getTrackedBus();
+  const bar = document.getElementById('floatingRemainBar');
+  const textEl = document.getElementById('floatingRemainText');
+
+  if (!tracked) {
+    bar.classList.add('hidden');
+    updateRemainScreen(null, []);
+    return;
+  }
+
+  bar.classList.remove('hidden');
+
+  const pollTracked = async () => {
+    const current = getTrackedBus();
+    if (!current) return;
+    try {
+      const res = await fetch(`${KMB_BASE}/eta/${current.stopId}/${current.route}/${current.serviceType}`);
+      const json = await res.json();
+      const now = new Date();
+      const validEtas = json.data.filter(e => e.dir === current.bound && e.eta);
+
+      if (!validEtas.length) {
+        textEl.innerHTML = `<strong>${current.route}</strong> (${current.stopNameEn}) • No buses scheduled`;
+        updateRemainScreen(current, []);
+        return;
+      }
+
+      const nextEta = new Date(validEtas[0].eta);
+      const diffSec = Math.max(0, Math.round((nextEta - now) / 1000));
+      const mins = Math.floor(diffSec / 60);
+      const secs = diffSec % 60;
+      const remainStr = diffSec <= 30 ? 'Arriving now' : `${mins}m ${secs < 10 ? '0' : ''}${secs}s remain`;
+
+      textEl.innerHTML = `⏱️ <strong>${current.route}</strong> • ${remainStr} (${current.stopNameEn})`;
+      updateRemainScreen(current, validEtas);
+    } catch (err) {
+      textEl.innerHTML = `<strong>${current.route}</strong> • Updating...`;
+    }
+  };
+
+  await pollTracked();
+  globalRemainInterval = setInterval(pollTracked, 10000);
+}
+
+function updateRemainScreen(tracked, validEtas) {
+  const container = document.getElementById('remainContent');
+  if (!container) return;
+
+  if (!tracked) {
+    const bookmarks = getBookmarks();
+    const savedQuickPick = bookmarks.length
+      ? `<div style="margin-top:16px; text-align:left;">
+          <div style="font-weight:700; margin-bottom:8px; color:#333;">Or pick from your Saved Stops:</div>
+          ${bookmarks.map(b => {
+            const safeDest = b.destEn.replace(/'/g, "\\'");
+            return `
+              <div class="route-card" onclick="trackStopRemain('${b.route}', '${b.bound}', '${b.serviceType}', '${b.stopId}', '${safeDest}', '${b.destTc}')">
+                <div class="route-num">${b.route}</div>
+                <div class="route-dest">
+                  <strong>${b.stopNameEn} (${b.stopNameTc})</strong>
+                  <small>→ ${b.destEn}</small>
+                </div>
+                <span style="color:#d32f2f; font-weight:700;">Track →</span>
+              </div>
+            `;
+          }).join('')}
+        </div>`
+      : '';
+
+    container.innerHTML = `
+      <div class="empty-state">
+        <p style="font-size:1.1rem; margin-bottom:6px;"><strong>⏱️ No Bus Selected Yet</strong></p>
+        <p style="margin-bottom:14px;">Open any route, tap a red minute badge (e.g. <strong>8 min</strong>), and its live countdown will appear here.</p>
+        <button class="eta-badge" style="font-size:1rem; padding:10px 18px;" onclick="showRoutesHome()">Browse Routes</button>
+      </div>
+      ${savedQuickPick}
+    `;
+    return;
+  }
+
+  const now = new Date();
+  if (!validEtas.length) {
+    container.innerHTML = `
+      <div class="remain-card">
+        <div class="remain-route-pill">${tracked.route}</div>
+        <div><strong>To ${tracked.destEn} (${tracked.destTc})</strong></div>
+        <div style="color:#666; margin-top:4px;">📍 ${tracked.stopNameEn} (${tracked.stopNameTc})</div>
+        <div class="remain-big-time" style="font-size:1.6rem;">No Departures</div>
+        <button class="stop-track-btn" onclick="clearTrackedBus()">Stop Tracking</button>
+      </div>
+    `;
+    return;
+  }
+
+  const firstEta = new Date(validEtas[0].eta);
+  const diffMins = Math.max(0, Math.round((firstEta - now) / 60000));
+  const clockStr = firstEta.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const otherBadges = validEtas.slice(1).map(e => {
+    const m = Math.max(0, Math.round((new Date(e.eta) - now) / 60000));
+    const t = new Date(e.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `<div class="eta-badge">${m === 0 ? 'Arriving' : m + ' min'} <span>(${t})</span></div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="remain-card">
+      <div class="remain-route-pill">${tracked.route}</div>
+      <div><strong>To ${tracked.destEn} (${tracked.destTc})</strong></div>
+      <div style="color:#555; margin-top:6px; font-size:0.95rem;">📍 ${tracked.stopNameEn} (${tracked.stopNameTc})</div>
+
+      <div class="remain-big-time">${diffMins === 0 ? 'Arriving' : diffMins + ' min'}</div>
+      <div class="remain-sub-clock">Estimated arrival at <strong>${clockStr}</strong></div>
+
+      ${otherBadges ? `<div class="remain-upcoming-list">${otherBadges}</div>` : ''}
+      <button class="stop-track-btn" onclick="clearTrackedBus()">Stop Tracking</button>
+    </div>
+  `;
+}
+
 // --- Initialization ---
 async function initApp() {
   const routeListEl = document.getElementById('routeList');
@@ -82,12 +237,11 @@ async function initApp() {
         routes: allRoutes,
         stops: stopsMap
       }));
-    } catch (e) {
-      console.warn('LocalStorage quota exceeded, continuing in memory.');
-    }
+    } catch (e) {}
   }
 
   renderRouteSearch('');
+  startFloatingRemainTracker();
 }
 
 function getDistanceMeters(lat1, lon1, lat2, lon2) {
@@ -106,6 +260,7 @@ function setActiveTab(tab) {
   document.getElementById('tabRoutes').classList.toggle('active', tab === 'routes');
   document.getElementById('tabNearby').classList.toggle('active', tab === 'nearby');
   document.getElementById('tabSaved').classList.toggle('active', tab === 'saved');
+  document.getElementById('tabRemain').classList.toggle('active', tab === 'remain');
 }
 
 function hideAllSections() {
@@ -113,10 +268,10 @@ function hideAllSections() {
   document.getElementById('routeList').classList.add('hidden');
   document.getElementById('nearbySection').classList.add('hidden');
   document.getElementById('savedSection').classList.add('hidden');
+  document.getElementById('remainSection').classList.add('hidden');
   document.getElementById('stopSection').classList.add('hidden');
 }
 
-// --- Tab 1: Route Search ---
 function showRoutesHome() {
   hideAllSections();
   setActiveTab('routes');
@@ -142,7 +297,6 @@ function renderRouteSearch(query) {
   `).join('');
 }
 
-// --- Route Detail & Stop Bookmarking ---
 async function selectRoute(route, bound, serviceType, destEn, destTc) {
   hideAllSections();
   document.getElementById('stopSection').classList.remove('hidden');
@@ -201,7 +355,7 @@ async function selectRoute(route, bound, serviceType, destEn, destTc) {
           const diffMins = Math.max(0, Math.round((new Date(e.eta) - now) / 60000));
           const label = diffMins === 0 ? 'Arriving' : `${diffMins} min`;
           const remark = e.rmk_en ? `<span>(${e.rmk_en})</span>` : '';
-          return `<div class="eta-badge">${label} ${remark}</div>`;
+          return `<button class="eta-badge" onclick="trackStopRemain('${route}', '${bound}', '${serviceType}', '${item.stop}', '${safeDestEn}', '${destTc}')">${label} ${remark}</button>`;
         }).join('');
       });
     } catch (err) {
@@ -213,7 +367,6 @@ async function selectRoute(route, bound, serviceType, destEn, destTc) {
   activeEtaInterval = setInterval(updateAllRouteETAs, 30000);
 }
 
-// --- Tab 2: GPS Nearby Stops ---
 function findNearbyStops() {
   hideAllSections();
   setActiveTab('nearby');
@@ -305,7 +458,7 @@ function findNearbyStops() {
                     <small>→ ${r.dest_en} (${r.dest_tc})</small>
                   </div>
                   <div class="nearby-etas">
-                    ${r.etas.map(t => `<span class="eta-badge">${t}</span>`).join('')}
+                    ${r.etas.map(t => `<button class="eta-badge" onclick="trackStopRemain('${r.route}', '${r.bound}', '${r.serviceType}', '${stop.id}', '${safeDestEn}', '${r.dest_tc}')">${t}</button>`).join('')}
                     <button class="star-btn ${saved ? 'bookmarked' : ''}"
                       onclick="toggleBookmark(this, '${r.route}', '${r.bound}', '${r.serviceType}', '${stop.id}', '${safeDestEn}', '${r.dest_tc}')">
                       ${saved ? '★' : '☆'}
@@ -331,7 +484,6 @@ function findNearbyStops() {
   );
 }
 
-// --- Tab 3: Bookmarked Stops ---
 async function showSavedStops() {
   hideAllSections();
   setActiveTab('saved');
@@ -376,6 +528,7 @@ async function showSavedStops() {
     await Promise.all(currentBookmarks.map(async (b) => {
       const box = document.getElementById(`saved-eta-${b.id}`);
       if (!box) return;
+      const safeDestEn = b.destEn.replace(/'/g, "\\'");
 
       try {
         const res = await fetch(`${KMB_BASE}/eta/${b.stopId}/${b.route}/${b.serviceType}`);
@@ -391,7 +544,7 @@ async function showSavedStops() {
           const diffMins = Math.max(0, Math.round((new Date(e.eta) - now) / 60000));
           const label = diffMins === 0 ? 'Arriving' : `${diffMins} min`;
           const remark = e.rmk_en ? `<span>(${e.rmk_en})</span>` : '';
-          return `<div class="eta-badge">${label} ${remark}</div>`;
+          return `<button class="eta-badge" onclick="trackStopRemain('${b.route}', '${b.bound}', '${b.serviceType}', '${b.stopId}', '${safeDestEn}', '${b.destTc}')">${label} ${remark}</button>`;
         }).join('');
       } catch (err) {
         box.innerHTML = '<span class="no-eta">Failed to load ETA.</span>';
@@ -410,7 +563,18 @@ function removeSavedCard(id, route, bound, serviceType, stopId) {
   if (!getBookmarks().length) showSavedStops();
 }
 
-// --- Event Listeners ---
+function showRemainTab() {
+  hideAllSections();
+  setActiveTab('remain');
+  document.getElementById('remainSection').classList.remove('hidden');
+  const tracked = getTrackedBus();
+  if (!tracked) {
+    updateRemainScreen(null, []);
+  } else {
+    startFloatingRemainTracker();
+  }
+}
+
 document.getElementById('routeInput').addEventListener('input', (e) => {
   showRoutesHome();
   renderRouteSearch(e.target.value);
@@ -419,6 +583,9 @@ document.getElementById('routeInput').addEventListener('input', (e) => {
 document.getElementById('tabRoutes').addEventListener('click', showRoutesHome);
 document.getElementById('tabNearby').addEventListener('click', findNearbyStops);
 document.getElementById('tabSaved').addEventListener('click', showSavedStops);
+document.getElementById('tabRemain').addEventListener('click', showRemainTab);
 document.getElementById('backBtn').addEventListener('click', showRoutesHome);
+document.getElementById('floatingRemainBar').addEventListener('click', showRemainTab);
+document.getElementById('floatingClearBtn').addEventListener('click', clearTrackedBus);
 
 initApp();
