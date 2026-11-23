@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="HK Bus Live" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#E30613" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23E30613'/%3E%3Cpath d='M28 32h44a6 6 0 016 6v30a6 6 0 01-6 6H28a6 6 0 01-6-6V38a6 6 0 016-6zm4 10v14h36V42H32zm6 26a4 4 0 100-8 4 4 0 000 8zm24 0a4 4 0 100-8 4 4 0 000 8z' fill='%23FFFFFF'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23E30613'/%3E%3Cpath d='M28 32h44a6 6 0 016 6v30a6 6 0 01-6 6H28a6 6 0 01-6-6V38a6 6 0 016-6zm4 10v14h36V42H32zm6 26a4 4 0 100-8 4 4 0 000 8zm24 0a4 4 0 100-8 4 4 0 000 8z' fill='%23FFFFFF'/%3E%3C/svg%3E" />
+  <title>HK Bus Live | 香港巴士實時到站預報</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+          },
+          colors: {
+            kmb: {
+              DEFAULT: '#E30613',
+              light: '#FEE2E2',
+              dark: '#991B1B',
+            },
+            ctb: {
+              DEFAULT: '#F59E0B',
+              blue: '#005596',
+              light: '#FEF3C7',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom scrollbar for sleek transit dashboard feel */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.7);
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .live-dot {
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200 selection:bg-blue-500 selection:text-white">
+
+  <!-- Top Navigation Header (with iOS Safe Area Top Inset so status bar never overlaps buttons) -->
+  <header class="sticky top-0 z-30 pt-[env(safe-area-inset-top)] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 via-amber-500 to-blue-700 flex items-center justify-center text-white shadow-md shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 6v6m8-6v6M4 10h16M5 18h14a2 2 0 002-2V7a3 3 0 00-3-3H6a3 3 0 00-3 3v9a2 2 0 002 2zm2 0v2m10-2v2" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-lg sm:text-xl tracking-tight leading-none" data-i18n="appTitle">HK Bus Live</h1>
+            <span class="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-dot"></span>
+              DATA.GOV.HK
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" data-i18n="appSubtitle">KMB / LWB • Citybus</p>
+        </div>
+      </div>
+
+      <!-- Controls: API Status Pill, Language Toggle, Dark Mode Toggle -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- API Health Indicator Button -->
+        <button id="apiStatusBtn" type="button" title="API Connection Status" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">
+          <span id="overallStatusDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span id="overallStatusText" class="hidden md:inline">Connecting...</span>
+        </button>
+
+        <!-- Language Switcher -->
+        <button id="langToggleBtn" type="button" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition">
+          繁體中文
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="themeToggleBtn" type="button" aria-label="Toggle Dark Mode" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+          <!-- Sun Icon -->
+          <svg id="sunIcon" class="w-5 h-5 hidden dark:block text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <!-- Moon Icon -->
+          <svg id="moonIcon" class="w-5 h-5 block dark:hidden text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Collapsible API Diagnostics Banner -->
+    <div id="apiDiagnosticsDrawer" class="hidden border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/95 px-4 py-3">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span id="statusDotKMB" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+            <span class="font-semibold">KMB / LWB:</span>
+            <span id="statusTextKMB" class="text-slate-500 dark:text-slate-400">Loading...</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="statusDotCTB" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+            <span class="font-semibold">Citybus (CTB):</span>
+            <span id="statusTextCTB" class="text-slate-500 dark:text-slate-400">Loading...</span>
+          </div>
+        </div>
+        <button id="reloadApisBtn" type="button" class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition">
+          Reload Feeds
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- LEFT COLUMN: Search, Filters, Tabs & Route/Saved List (5 cols on lg) -->
+    <section class="lg:col-span-5 flex flex-col gap-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4">
+
+      <!-- Mode Tabs: Search Routes, Nearby GPS vs Saved Bookmarks -->
+      <div class="grid grid-cols-3 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 gap-1">
+        <button id="tabSearchBtn" type="button" class="py-2 px-2 rounded-lg text-xs sm:text-sm font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm transition flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span data-i18n="tabRoutes" class="truncate">Routes</span>
+        </button>
+        <button id="tabNearbyBtn" type="button" class="py-2 px-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span data-i18n="tabNearby" class="truncate">Nearby</span>
+        </button>
+        <button id="tabSavedBtn" type="button" class="py-2 px-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+          <span data-i18n="tabSaved" class="truncate">Saved</span>
+          <span id="savedCountBadge" class="px-1.5 py-0.2 text-[11px] rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">0</span>
+        </button>
+      </div>
+
+      <!-- Search View Container -->
+      <div id="searchPanelView" class="flex flex-col gap-3.5">
+        <!-- Search Input -->
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            id="routeSearchInput"
+            type="text"
+            autocomplete="off"
+            placeholder="Search route (e.g. 101, 968, A21, 79X) or destination..."
+            class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-sm font-medium outline-none transition"
+          />
+          <button id="clearSearchBtn" type="button" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Quick-Pick Popular Routes -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 shrink-0 mr-1" data-i18n="popularLabel">Popular:</span>
+          <button type="button" data-quick-route="101" class="quick-route-chip px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0">101</button>
+          <button type="button" data-quick-route="968" class="quick-route-chip px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0">968</button>
+          <button type="button" data-quick-route="A21" class="quick-route-chip px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0">A21</button>
+          <button type="button" data-quick-route="1A" class="quick-route-chip px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0">1A</button>
+          <button type="button" data-quick-route="79X" class="quick-route-chip px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0">79X</button>
+          <button type="button" data-quick-route="B6" class="quick-route-chip px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0">B6</button>
+          <button type="button" data-quick-route="E23" class="quick-route-chip px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0">E23</button>
+        </div>
+
+        <!-- Operator Filter Pills -->
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" data-op-filter="ALL" class="op-filter-btn active px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm transition">
+            <span data-i18n="filterAll">All</span> <span id="countAll" class="opacity-75 ml-0.5"></span>
+          </button>
+          <button type="button" data-op-filter="KMB" class="op-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 transition">
+            KMB / LWB <span id="countKMB" class="opacity-75 ml-0.5"></span>
+          </button>
+          <button type="button" data-op-filter="CTB" class="op-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 transition">
+            Citybus <span id="countCTB" class="opacity-75 ml-0.5"></span>
+          </button>
+        </div>
+
+        <!-- Route List Results Info -->
+        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+          <span id="routeResultSummary">Loading routes...</span>
+          <span data-i18n="tapRouteHint">Select a route to view stops</span>
+        </div>
+
+        <!-- Scrollable Route List -->
+        <div id="routeListContainer" class="flex flex-col gap-2 max-h-[58vh] overflow-y-auto pr-1">
+          <!-- Skeleton loaders injected on startup -->
+        </div>
+      </div>
+
+      <!-- Nearby GPS Stops View Container -->
+      <div id="nearbyPanelView" class="hidden flex-col gap-3">
+        <div class="flex items-center justify-between gap-2 px-1">
+          <p id="nearbyStatusText" class="text-xs text-slate-500 dark:text-slate-400" data-i18n="nearbyPrompt">
+            Find KMB &amp; LWB stops within 500m of your GPS
+          </p>
+          <button id="locateMeBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold shadow-sm transition shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span data-i18n="locateBtn">Locate Me</span>
+          </button>
+        </div>
+        <div id="nearbyListContainer" class="flex flex-col gap-2.5 max-h-[62vh] overflow-y-auto pr-1">
+          <!-- Nearby stops and live stop-eta arrivals rendered here -->
+        </div>
+      </div>
+
+      <!-- Saved Bookmarks View Container -->
+      <div id="savedPanelView" class="hidden flex-col gap-3">
+        <div class="flex items-center justify-between px-1">
+          <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="savedSubtitle">Tap any bookmarked stop for live arrival times</p>
+          <button id="refreshAllSavedBtn" type="button" class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline" data-i18n="refreshAll">Refresh All</button>
+        </div>
+        <div id="savedListContainer" class="flex flex-col gap-2.5 max-h-[62vh] overflow-y-auto pr-1">
+          <!-- Saved items rendered here -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Selected Route Stops & Real-Time ETA Drawer (7 cols on lg) -->
+    <section id="routeDetailSection" class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-[420px]">
+
+      <!-- Empty Welcome State (Before selecting a route) -->
+      <div id="emptyDetailState" class="flex-1 flex flex-col items-center justify-center text-center p-8 sm:p-12">
+        <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1" data-i18n="emptyTitle">Select a Bus Route</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-6" data-i18n="emptyDesc">
+          Search any KMB, Long Win, or Citybus route on the left to inspect its stops and live arrival countdowns.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md text-left">
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70">
+            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-rose-600 text-white mb-1.5">KMB / LWB</span>
+            <p class="text-xs text-slate-600 dark:text-slate-300" data-i18n="cardKmbDesc">Kowloon, New Territories & Airport Express routes</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70">
+            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 text-slate-950 border border-blue-800/20 mb-1.5">CITYBUS</span>
+            <p class="text-xs text-slate-600 dark:text-slate-300" data-i18n="cardCtbDesc">HK Island, Cross-Harbour & Tung Chung routes</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Route Header & Stop Timeline -->
+      <div id="activeRouteView" class="hidden flex-col h-full">
+        <!-- Route Banner -->
+        <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="flex items-center gap-3.5">
+              <div id="detailRouteBadge" class="px-3.5 py-2 rounded-xl font-extrabold text-xl sm:text-2xl tracking-tight shadow-sm bg-rose-600 text-white shrink-0">
+                101
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span id="detailOperatorPill" class="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                    KMB
+                  </span>
+                  <span id="detailDirectionLabel" class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Outbound
+                  </span>
+                  <button id="switchDirectionBtn" type="button" class="hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-200/80 hover:bg-slate-300/80 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                    <span data-i18n="switchDirBtn">Reverse</span>
+                  </button>
+                </div>
+                <h2 id="detailRouteTitle" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-1 leading-snug">
+                  Kennedy Town → Kwun Tong (Yue Man Square)
+                </h2>
+              </div>
+            </div>
+
+            <!-- Action Controls: Refresh & Auto-Refresh Countdown -->
+            <div class="flex items-center gap-2 ml-auto">
+              <button id="toggleAutoRefreshBtn" type="button" title="Toggle 30s Auto-Refresh" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 transition">
+                <span id="autoRefreshDot" class="w-2 h-2 rounded-full bg-emerald-500 live-dot"></span>
+                <span id="autoRefreshCountdown">30s</span>
+              </button>
+              <button id="manualRefreshEtaBtn" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold shadow-sm transition">
+                <svg id="refreshSpinnerIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span data-i18n="refreshBtn">Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Stop Filter Input inside Route -->
+          <div class="mt-3.5 relative">
+            <input
+              id="stopFilterInput"
+              type="text"
+              placeholder="Filter stops along this route..."
+              class="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm outline-none focus:border-blue-500 transition"
+            />
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Stop List & Accordion ETA Container -->
+        <div id="stopsTimelineContainer" class="p-4 sm:p-5 flex-1 overflow-y-auto max-h-[65vh] space-y-2">
+          <!-- Stop items dynamically rendered here -->
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Toast Notification Banner (Non-blocking UI alert replacement) -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 py-4 px-4 text-center text-xs text-slate-500 dark:text-slate-400">
+    <p>
+      <span data-i18n="footerData">Real-time open data provided by</span>
+      <a href="https://data.gov.hk" target="_blank" rel="noopener noreferrer" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline">DATA.GOV.HK</a>
+      (KMB / LWB &amp; Citybus). <span data-i18n="footerRefresh">ETAs auto-refresh every 30s.</span>
+    </p>
+  </footer>
+
+  <script>
+    /**
+     * ============================================================================
+     * HK BUS LIVE - UNIFIED REAL-TIME TRANSIT WEB APPLICATION
+     * Directly integrates:
+     *  1. KMB & Long Win Bus (data.etabus.gov.hk)
+     *  2. Citybus (rt.data.gov.hk/v2/transport/citybus)
+     * ============================================================================
+     */
+
+    // --- API Endpoints Configuration ---
+    const API = {
+      KMB: {
+        routes: 'https://data.etabus.gov.hk/v1/transport/kmb/route/',
+        stops: 'https://data.etabus.gov.hk/v1/transport/kmb/stop',
+        stopEta: (stopId) =>
+          `https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/${encodeURIComponent(stopId)}`,
+        routeStops: (route, dir, serviceType) =>
+          `https://data.etabus.gov.hk/v1/transport/kmb/route-stop/${encodeURIComponent(route)}/${dir}/${serviceType}`,
+        eta: (stopId, route, serviceType) =>
+          `https://data.etabus.gov.hk/v1/transport/kmb/eta/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}/${serviceType}`,
+      },
+      CTB: {
+        routes: 'https://rt.data.gov.hk/v2/transport/citybus/route/ctb',
+        routeStops: (route, dir) =>
+          `https://rt.data.gov.hk/v2/transport/citybus/route-stop/ctb/${encodeURIComponent(route)}/${dir}`,
+        stopInfo: (stopId) =>
+          `https://rt.data.gov.hk/v2/transport/citybus/stop/${encodeURIComponent(stopId)}`,
+        eta: (stopId, route) =>
+          `https://rt.data.gov.hk/v2/transport/citybus/eta/ctb/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}`,
+      },
+    };
+
+    // --- Internationalization Dictionary (EN / 繁體中文) ---
+    const I18N = {
+      en: {
+        appTitle: 'HK Bus Live',
+        appSubtitle: 'KMB / LWB • Citybus',
+        tabRoutes: 'Routes',
+        tabNearby: 'Nearby',
+        tabSaved: 'Saved',
+        nearbyPrompt: 'Find KMB & LWB stops within 500m of your GPS',
+        locateBtn: 'Locate Me',
+        locatingGps: 'Acquiring GPS location...',
+        gpsDenied: 'Location permission denied or unavailable. Please enable GPS in browser settings.',
+        noNearbyStops: 'No KMB / LWB bus stops found within 600m of your current location.',
+        popularLabel: 'Popular:',
+        filterAll: 'All',
+        tapRouteHint: 'Select a route to view stops',
+        savedSubtitle: 'Tap any bookmarked stop for live arrival times',
+        refreshAll: 'Refresh All',
+        emptyTitle: 'Select a Bus Route',
+        emptyDesc: 'Search any KMB, Long Win, or Citybus route on the left to inspect its stops and live arrival countdowns.',
+        cardKmbDesc: 'Kowloon, New Territories & Airport Express routes',
+        cardCtbDesc: 'HK Island, Cross-Harbour & Tung Chung routes',
+        switchDirBtn: 'Reverse',
+        refreshBtn: 'Refresh',
+        searchPlaceholder: 'Search route (e.g. 101, 968, A21, 79X) or destination...',
+        stopFilterPlaceholder: 'Filter stops along this route...',
+        outbound: 'Outbound',
+        inbound: 'Inbound',
+        special: 'Special Departure',
+        toPrefix: 'To ',
+        fromPrefix: 'From ',
+        arriving: 'Arriving',
+        departed: 'Departed',
+        min: 'min',
+        noEta: 'No scheduled departures in the next 60 mins',
+        loadingStops: 'Fetching bus stops...',
+        loadingEta: 'Checking live arrivals...',
+        savedEmptyTitle: 'No Saved Stops Yet',
+        savedEmptyDesc: 'Open any bus route and tap the star icon next to a stop to bookmark it here.',
+        bookmarkedToast: 'Stop saved to bookmarks',
+        unbookmarkedToast: 'Removed from bookmarks',
+        autoRefreshPaused: 'Auto-refresh paused',
+        autoRefreshResumed: 'Auto-refresh enabled (30s)',
+        alertLabel: 'Alert:',
+        alertSetToast: (m, r) => `Alert set: ${m} min before Route ${r}`,
+        alertClearedToast: 'Arrival alert cancelled',
+        busArrivingAlert: (r, s, m) => `Route ${r} at ${s} is ~${m} min away!`,
+        footerData: 'Real-time open data provided by',
+        footerRefresh: 'ETAs auto-refresh every 30s.',
+        routesFound: (n) => `${n.toLocaleString()} routes`,
+        apiOnline: 'All Feeds Live',
+        apiPartial: 'Partial Feeds Live',
+        apiOffline: 'Offline / Fallback',
+      },
+      tc: {
+        appTitle: '香港巴士實時通',
+        appSubtitle: '九巴 • 龍運 • 城巴',
+        tabRoutes: '路線',
+        tabNearby: '附近車站',
+        tabSaved: '已收藏',
+        nearbyPrompt: '搜尋距離您 500 米內的九巴及龍運車站',
+        locateBtn: '定位搜尋',
+        locatingGps: '正在獲取 GPS 定位...',
+        gpsDenied: '無法取得位置權限，請在瀏覽器設定中開啟定位功能。',
+        noNearbyStops: '附近 600 米內暫未找到九巴或龍運巴士站。',
+        popularLabel: '熱門:',
+        filterAll: '全部',
+        tapRouteHint: '點擊路線查看沿途車站',
+        savedSubtitle: '點擊已收藏車站查看實時到站預報',
+        refreshAll: '全部更新',
+        emptyTitle: '請選擇巴士路線',
+        emptyDesc: '在左側搜尋九巴、龍運或城巴路線，查看沿途車站及實時到站時間。',
+        cardKmbDesc: '九龍、新界、過海及龍運機場路線',
+        cardCtbDesc: '港島、過海隧道及東涌機場路線',
+        switchDirBtn: '對調方向',
+        refreshBtn: '更新',
+        searchPlaceholder: '搜尋路線號碼 (如 101, 968, A21, 79X) 或目的地...',
+        stopFilterPlaceholder: '搜尋此路線沿途車站...',
+        outbound: '去程',
+        inbound: '回程',
+        special: '特別班次',
+        toPrefix: '往 ',
+        fromPrefix: '由 ',
+        arriving: '即將抵達',
+        departed: '已開出',
+        min: '分鐘',
+        noEta: '未來60分鐘內暫無班次預報',
+        loadingStops: '正在載入車站資料...',
+        loadingEta: '正在獲取實時到站時間...',
+        savedEmptyTitle: '暫無收藏車站',
+        savedEmptyDesc: '選擇任何巴士路線後，點擊車站旁的星號即可加入收藏。',
+        bookmarkedToast: '已加入收藏車站',
+        unbookmarkedToast: '已從收藏移除',
+        autoRefreshPaused: '已暫停自動更新',
+        autoRefreshResumed: '已開啟自動更新 (30秒)',
+        alertLabel: '到站提示:',
+        alertSetToast: (m, r) => `已設定 ${r} 號線到站前 ${m} 分鐘提示`,
+        alertClearedToast: '已取消到站提示',
+        busArrivingAlert: (r, s, m) => `${r} 號線即將在約 ${m} 分鐘後抵達 ${s}！`,
+        footerData: '實時開放數據由',
+        footerRefresh: '到站時間每30秒自動更新。',
+        routesFound: (n) => `共 ${n.toLocaleString()} 條路線`,
+        apiOnline: '數據連線正常',
+        apiPartial: '部分數據連線',
+        apiOffline: '連線受阻',
+      },
+    };
+
+    // --- Application State ---
+    const state = {
+      lang: localStorage.getItem('hkbus_lang') || 'en',
+      theme: localStorage.getItem('hkbus_theme') || 'light',
+      activeTab: 'search', // 'search' | 'nearby' | 'saved'
+      operatorFilter: 'ALL', // 'ALL' | 'KMB' | 'CTB'
+      searchQuery: '',
+      stopFilterQuery: '',
+
+      // Unified Route Master List
+      allRoutes: [],
+      filteredRoutes: [],
+
+      // KMB Stop Dictionary Cache (stop_id -> { name_en, name_tc, lat, long })
+      kmbStopsMap: new Map(),
+      // CTB Stop Dictionary Cache (stop_id -> { name_en, name_tc, lat, long })
+      ctbStopsMap: new Map(),
+
+      // User GPS Coordinates for Nearby Stops
+      userCoords: null,
+
+      // API Health Status
+      apiStatus: {
+        KMB: { ok: false, count: 0, msg: 'Loading...' },
+        CTB: { ok: false, count: 0, msg: 'Loading...' },
+      },
+
+      // Currently Selected Route & Stops
+      selectedRoute: null,
+      activeStops: [],
+      expandedStopIds: new Set(),
+      stopEtasMap: new Map(), // `${routeKey}_${stopId}` -> { loading, list, error, updatedAt }
+
+      // Bookmarks persisted in localStorage (filter out any legacy NLB entries if present)
+      savedStops: JSON.parse(localStorage.getItem('hkbus_saved_stops') || '[]').filter(
+        (b) => b.operator === 'KMB' || b.operator === 'CTB'
+      ),
+
+      // Active arrival alerts: Map of `${routeKey}_${stopId}` -> { mins: 1 | 3 | 5, triggeredForTs: string | null }
+      stopAlerts: new Map(),
+
+      // Auto-refresh timer
+      autoRefreshEnabled: true,
+      countdown: 30,
+      timerId: null,
+    };
+
+    // --- DOM Element References ---
+    const dom = {
+      apiStatusBtn: document.getElementById('apiStatusBtn'),
+      overallStatusDot: document.getElementById('overallStatusDot'),
+      overallStatusText: document.getElementById('overallStatusText'),
+      apiDiagnosticsDrawer: document.getElementById('apiDiagnosticsDrawer'),
+      statusDotKMB: document.getElementById('statusDotKMB'),
+      statusTextKMB: document.getElementById('statusTextKMB'),
+      statusDotCTB: document.getElementById('statusDotCTB'),
+      statusTextCTB: document.getElementById('statusTextCTB'),
+      reloadApisBtn: document.getElementById('reloadApisBtn'),
+      langToggleBtn: document.getElementById('langToggleBtn'),
+      themeToggleBtn: document.getElementById('themeToggleBtn'),
+      tabSearchBtn: document.getElementById('tabSearchBtn'),
+      tabNearbyBtn: document.getElementById('tabNearbyBtn'),
+      tabSavedBtn: document.getElementById('tabSavedBtn'),
+      savedCountBadge: document.getElementById('savedCountBadge'),
+      searchPanelView: document.getElementById('searchPanelView'),
+      nearbyPanelView: document.getElementById('nearbyPanelView'),
+      savedPanelView: document.getElementById('savedPanelView'),
+      nearbyStatusText: document.getElementById('nearbyStatusText'),
+      locateMeBtn: document.getElementById('locateMeBtn'),
+      nearbyListContainer: document.getElementById('nearbyListContainer'),
+      routeSearchInput: document.getElementById('routeSearchInput'),
+      clearSearchBtn: document.getElementById('clearSearchBtn'),
+      countAll: document.getElementById('countAll'),
+      countKMB: document.getElementById('countKMB'),
+      countCTB: document.getElementById('countCTB'),
+      routeResultSummary: document.getElementById('routeResultSummary'),
+      routeListContainer: document.getElementById('routeListContainer'),
+      savedListContainer: document.getElementById('savedListContainer'),
+      refreshAllSavedBtn: document.getElementById('refreshAllSavedBtn'),
+      emptyDetailState: document.getElementById('emptyDetailState'),
+      activeRouteView: document.getElementById('activeRouteView'),
+      detailRouteBadge: document.getElementById('detailRouteBadge'),
+      detailOperatorPill: document.getElementById('detailOperatorPill'),
+      detailDirectionLabel: document.getElementById('detailDirectionLabel'),
+      switchDirectionBtn: document.getElementById('switchDirectionBtn'),
+      detailRouteTitle: document.getElementById('detailRouteTitle'),
+      toggleAutoRefreshBtn: document.getElementById('toggleAutoRefreshBtn'),
+      autoRefreshDot: document.getElementById('autoRefreshDot'),
+      autoRefreshCountdown: document.getElementById('autoRefreshCountdown'),
+      manualRefreshEtaBtn: document.getElementById('manualRefreshEtaBtn'),
+      refreshSpinnerIcon: document.getElementById('refreshSpinnerIcon'),
+      stopFilterInput: document.getElementById('stopFilterInput'),
+      stopsTimelineContainer: document.getElementById('stopsTimelineContainer'),
+      toastContainer: document.getElementById('toastContainer'),
+    };
+
+    // --- Helper Utilities ---
+    function t(key) {
+      return I18N[state.lang]?.[key] ?? I18N.en[key] ?? key;
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function applyTheme() {
+      const root = document.documentElement;
+      if (state.theme === 'dark') {
+        root.classList.add('dark');
+        root.classList.remove('light');
+      } else {
+        root.classList.remove('dark');
+        root.classList.add('light');
+      }
+    }
+
+    function applyTranslations() {
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.dataset.i18n;
+        const val = t(key);
+        if (typeof val === 'string') el.textContent = val;
+      });
+      dom.langToggleBtn.textContent = state.lang === 'en' ? '繁體中文' : 'English';
+      dom.routeSearchInput.placeholder = t('searchPlaceholder');
+      dom.stopFilterInput.placeholder = t('stopFilterPlaceholder');
+      updateApiStatusUI();
+      if (state.filteredRoutes.length > 0) {
+        dom.routeResultSummary.textContent = t('routesFound')(state.filteredRoutes.length);
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const colors = {
+        info: 'bg-slate-900 text-white dark:bg-slate-800 border-slate-700',
+        success: 'bg-emerald-600 text-white border-emerald-500',
+        error: 'bg-rose-600 text-white border-rose-500',
+      };
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold shadow-lg border transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+      toast.textContent = message;
+      dom.toastContainer.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    function getOperatorStyle(op) {
+      if (op === 'CTB') {
+        return {
+          label: 'CITYBUS',
+          badge: 'bg-amber-400 text-slate-950 border border-blue-900/20',
+          pill: 'bg-amber-100 text-amber-900 dark:bg-amber-950/70 dark:text-amber-300',
+        };
+      }
+      return {
+        label: 'KMB / LWB',
+        badge: 'bg-rose-600 text-white',
+        pill: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+      };
+    }
+
+    function compareBusRoutes(a, b) {
+      const re = /^([A-Z]*)(\d+)([A-Z]*)$/;
+      const ma = a.route.match(re);
+      const mb = b.route.match(re);
+      if (ma && mb) {
+        if (ma[1] !== mb[1]) return ma[1].localeCompare(mb[1]);
+        const numDiff = Number(ma[2]) - Number(mb[2]);
+        if (numDiff !== 0) return numDiff;
+        if (ma[3] !== mb[3]) return ma[3].localeCompare(mb[3]);
+      } else {
+        const strDiff = a.route.localeCompare(b.route);
+        if (strDiff !== 0) return strDiff;
+      }
+      if (a.operator !== b.operator) return a.operator.localeCompare(b.operator);
+      return a.bound.localeCompare(b.bound);
+    }
+
+    // --- Feed Loading & Caching ---
+    function updateApiStatusUI() {
+      const kmb = state.apiStatus.KMB;
+      const ctb = state.apiStatus.CTB;
+
+      dom.statusDotKMB.className = `w-2.5 h-2.5 rounded-full ${kmb.ok ? 'bg-emerald-500' : 'bg-rose-500'}`;
+      dom.statusTextKMB.textContent = kmb.msg;
+
+      dom.statusDotCTB.className = `w-2.5 h-2.5 rounded-full ${ctb.ok ? 'bg-emerald-500' : 'bg-rose-500'}`;
+      dom.statusTextCTB.textContent = ctb.msg;
+
+      if (kmb.ok && ctb.ok) {
+        dom.overallStatusDot.className = 'w-2 h-2 rounded-full bg-emerald-500 live-dot';
+        dom.overallStatusText.textContent = t('apiOnline');
+      } else if (kmb.ok || ctb.ok) {
+        dom.overallStatusDot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        dom.overallStatusText.textContent = t('apiPartial');
+      } else {
+        dom.overallStatusDot.className = 'w-2 h-2 rounded-full bg-rose-500';
+        dom.overallStatusText.textContent = t('apiOffline');
+      }
+    }
+
+    function renderSkeletonRoutes() {
+      dom.routeListContainer.innerHTML = Array.from({ length: 6 })
+        .map(
+          () => `
+          <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 animate-pulse flex items-center gap-3">
+            <div class="w-14 h-9 rounded-lg bg-slate-200 dark:bg-slate-800"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3.5 bg-slate-200 dark:bg-slate-800 rounded w-3/4"></div>
+              <div class="h-2.5 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
+            </div>
+          </div>`
+        )
+        .join('');
+    }
+
+    async function initializeAllFeeds(forceRefresh = false) {
+      renderSkeletonRoutes();
+      const [kmbRoutes, ctbRoutes] = await Promise.all([
+        loadKmbData(forceRefresh),
+        loadCtbData(),
+      ]);
+
+      let merged = [...kmbRoutes, ...ctbRoutes];
+      if (merged.length === 0) {
+        merged = getOfflineFallbackRoutes();
+      }
+      merged.sort(compareBusRoutes);
+      state.allRoutes = merged;
+
+      updateOperatorCounts();
+      updateApiStatusUI();
+      filterAndRenderRoutes();
+    }
+
+    async function loadKmbData(forceRefresh = false) {
+      try {
+        const routesRes = await fetch(API.KMB.routes);
+        const routesJson = await routesRes.json();
+        const rawRoutes = routesJson.data || [];
+
+        const normalized = rawRoutes.map((r) => {
+          const bound = r.bound === 'O' ? 'outbound' : 'inbound';
+          const serviceType = r.service_type || '1';
+          return {
+            key: `KMB_${r.route}_${bound}_${serviceType}`,
+            operator: 'KMB',
+            route: r.route,
+            bound,
+            serviceType,
+            origEn: r.orig_en || '',
+            origTc: r.orig_tc || '',
+            destEn: r.dest_en || '',
+            destTc: r.dest_tc || '',
+          };
+        });
+
+        // Load or cache all KMB stops dictionary (24-hour TTL)
+        const CACHE_KEY = 'hkbus_kmb_stops_v1';
+        const CACHE_TS_KEY = 'hkbus_kmb_stops_ts';
+        const cachedStopsRaw = !forceRefresh ? localStorage.getItem(CACHE_KEY) : null;
+        const cachedTs = Number(localStorage.getItem(CACHE_TS_KEY) || 0);
+        const isFresh = Date.now() - cachedTs < 24 * 60 * 60 * 1000;
+
+        if (cachedStopsRaw && isFresh) {
+          const arr = JSON.parse(cachedStopsRaw);
+          arr.forEach((s) => state.kmbStopsMap.set(s[0], s[1]));
+        } else {
+          const stopsRes = await fetch(API.KMB.stops);
+          const stopsJson = await stopsRes.json();
+          const compactArr = [];
+          (stopsJson.data || []).forEach((s) => {
+            const entry = {
+              name_en: s.name_en || s.stop,
+              name_tc: s.name_tc || s.stop,
+              lat: parseFloat(s.lat),
+              long: parseFloat(s.long),
+            };
+            state.kmbStopsMap.set(s.stop, entry);
+            compactArr.push([s.stop, entry]);
+          });
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(compactArr));
+            localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+          } catch (_) {
+            // Ignore localStorage quota limits on mobile browsers
+          }
+        }
+
+        state.apiStatus.KMB = {
+          ok: true,
+          count: normalized.length,
+          msg: `${normalized.length} routes • ${state.kmbStopsMap.size} stops`,
+        };
+        return normalized;
+      } catch (err) {
+        state.apiStatus.KMB = { ok: false, count: 0, msg: 'Connection error' };
+        return [];
+      }
+    }
+
+    async function loadCtbData() {
+      try {
+        const res = await fetch(API.CTB.routes);
+        const json = await res.json();
+        const rawRoutes = json.data || [];
+        const normalized = [];
+
+        rawRoutes.forEach((r) => {
+          normalized.push({
+            key: `CTB_${r.route}_outbound_1`,
+            operator: 'CTB',
+            route: r.route,
+            bound: 'outbound',
+            serviceType: '1',
+            origEn: r.orig_en || '',
+            origTc: r.orig_tc || '',
+            destEn: r.dest_en || '',
+            destTc: r.dest_tc || '',
+          });
+          normalized.push({
+            key: `CTB_${r.route}_inbound_1`,
+            operator: 'CTB',
+            route: r.route,
+            bound: 'inbound',
+            serviceType: '1',
+            origEn: r.dest_en || '',
+            origTc: r.dest_tc || '',
+            destEn: r.orig_en || '',
+            destTc: r.orig_tc || '',
+          });
+        });
+
+        state.apiStatus.CTB = {
+          ok: true,
+          count: normalized.length,
+          msg: `${rawRoutes.length} routes live`,
+        };
+        return normalized;
+      } catch (err) {
+        state.apiStatus.CTB = { ok: false, count: 0, msg: 'Connection error' };
+        return [];
+      }
+    }
+
+    function getOfflineFallbackRoutes() {
+      return [
+        {
+          key: 'KMB_101_outbound_1',
+          operator: 'KMB',
+          route: '101',
+          bound: 'outbound',
+          serviceType: '1',
+          origEn: 'Kennedy Town',
+          origTc: '堅尼地城',
+          destEn: 'Kwun Tong (Yue Man Square)',
+          destTc: '觀塘 (裕民坊)',
+        },
+        {
+          key: 'CTB_969_outbound_1',
+          operator: 'CTB',
+          route: '969',
+          bound: 'outbound',
+          serviceType: '1',
+          origEn: 'Tin Shui Wai Town Centre',
+          origTc: '天水圍市中心',
+          destEn: 'Causeway Bay (Moreton Terrace)',
+          destTc: '銅鑼灣 (摩頓台)',
+        },
+      ];
+    }
+
+    function updateOperatorCounts() {
+      const total = state.allRoutes.length;
+      const kmbCount = state.allRoutes.filter((r) => r.operator === 'KMB').length;
+      const ctbCount = state.allRoutes.filter((r) => r.operator === 'CTB').length;
+      dom.countAll.textContent = total ? `(${total})` : '';
+      dom.countKMB.textContent = kmbCount ? `(${kmbCount})` : '';
+      dom.countCTB.textContent = ctbCount ? `(${ctbCount})` : '';
+    }
+
+    function filterAndRenderRoutes() {
+      const q = state.searchQuery.trim().toLowerCase();
+      state.filteredRoutes = state.allRoutes.filter((r) => {
+        if (state.operatorFilter !== 'ALL' && r.operator !== state.operatorFilter) {
+          return false;
+        }
+        if (!q) return true;
+        return (
+          r.route.toLowerCase().includes(q) ||
+          r.destEn.toLowerCase().includes(q) ||
+          r.destTc.toLowerCase().includes(q) ||
+          r.origEn.toLowerCase().includes(q) ||
+          r.origTc.toLowerCase().includes(q)
+        );
+      });
+
+      dom.routeResultSummary.textContent = t('routesFound')(state.filteredRoutes.length);
+      renderRouteList();
+    }
+
+    function renderRouteList() {
+      const slice = state.filteredRoutes.slice(0, 120);
+      if (slice.length === 0) {
+        dom.routeListContainer.innerHTML = `
+          <div class="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+            No matching bus routes found.
+          </div>`;
+        return;
+      }
+
+      dom.routeListContainer.innerHTML = slice
+        .map((r) => {
+          const style = getOperatorStyle(r.operator);
+          const isSelected = state.selectedRoute && state.selectedRoute.key === r.key;
+          const dest = state.lang === 'en' ? r.destEn : r.destTc;
+          const orig = state.lang === 'en' ? r.origEn : r.origTc;
+          const specialTag =
+            r.serviceType !== '1'
+              ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">${t('special')}</span>`
+              : '';
+
+          return `
+            <button
+              type="button"
+              data-route-key="${escapeHtml(r.key)}"
+              class="w-full text-left p-3 rounded-xl border transition flex items-center gap-3 ${
+                isSelected
+                  ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 dark:border-blue-500 shadow-sm'
+                  : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+              }"
+            >
+              <div class="w-16 py-1.5 rounded-lg text-center font-extrabold text-sm tracking-tight shrink-0 shadow-xs ${style.badge}">
+                ${escapeHtml(r.route)}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                    ${t('toPrefix')}${escapeHtml(dest)}
+                  </span>
+                  ${specialTag}
+                </div>
+                <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span class="font-bold uppercase">${r.operator}</span>
+                  <span>•</span>
+                  <span class="truncate">${t('fromPrefix')}${escapeHtml(orig)}</span>
+                </div>
+              </div>
+            </button>`;
+        })
+        .join('');
+
+      dom.routeListContainer.querySelectorAll('[data-route-key]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const found = state.allRoutes.find((item) => item.key === btn.dataset.routeKey);
+          if (found) selectRoute(found);
+        });
+      });
+    }
+
+    // --- Selected Route & Stop Timeline Logic ---
+    async function selectRoute(routeObj) {
+      state.selectedRoute = routeObj;
+      state.stopFilterQuery = '';
+      dom.stopFilterInput.value = '';
+
+      dom.emptyDetailState.classList.add('hidden');
+      dom.activeRouteView.classList.remove('hidden');
+      dom.activeRouteView.classList.add('flex');
+
+      renderRouteList();
+      renderActiveRouteHeader();
+      await fetchStopsForRoute(routeObj);
+
+      if (window.innerWidth < 1024) {
+        document.getElementById('routeDetailSection').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function getOppositeDirectionRoute(routeObj) {
+      const targetBound = routeObj.bound === 'outbound' ? 'inbound' : 'outbound';
+      return (
+        state.allRoutes.find(
+          (r) =>
+            r.operator === routeObj.operator &&
+            r.route === routeObj.route &&
+            r.bound === targetBound &&
+            r.serviceType === routeObj.serviceType
+        ) ||
+        state.allRoutes.find(
+          (r) =>
+            r.operator === routeObj.operator &&
+            r.route === routeObj.route &&
+            r.bound === targetBound
+        )
+      );
+    }
+
+    function renderActiveRouteHeader() {
+      const r = state.selectedRoute;
+      if (!r) return;
+
+      const style = getOperatorStyle(r.operator);
+      dom.detailRouteBadge.textContent = r.route;
+      dom.detailRouteBadge.className = `px-3.5 py-2 rounded-xl font-extrabold text-xl sm:text-2xl tracking-tight shadow-sm shrink-0 ${style.badge}`;
+
+      dom.detailOperatorPill.textContent = style.label;
+      dom.detailOperatorPill.className = `px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide ${style.pill}`;
+
+      dom.detailDirectionLabel.textContent =
+        r.bound === 'outbound' ? t('outbound') : t('inbound');
+
+      const orig = state.lang === 'en' ? r.origEn : r.origTc;
+      const dest = state.lang === 'en' ? r.destEn : r.destTc;
+      dom.detailRouteTitle.textContent = `${orig} → ${dest}`;
+
+      const hasOpposite = Boolean(getOppositeDirectionRoute(r));
+      dom.switchDirectionBtn.classList.toggle('hidden', !hasOpposite);
+    }
+
+    async function fetchStopsForRoute(routeObj) {
+      dom.stopsTimelineContainer.innerHTML = `
+        <div class="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+          ${t('loadingStops')}
+        </div>`;
+
+      try {
+        let stops = [];
+        if (routeObj.operator === 'KMB') {
+          const res = await fetch(
+            API.KMB.routeStops(routeObj.route, routeObj.bound, routeObj.serviceType)
+          );
+          const json = await res.json();
+          stops = (json.data || []).map((item, idx) => {
+            const info = state.kmbStopsMap.get(item.stop) || {};
+            return {
+              seq: Number(item.seq) || idx + 1,
+              stopId: item.stop,
+              nameEn: info.name_en || item.stop,
+              nameTc: info.name_tc || item.stop,
+            };
+          });
+        } else if (routeObj.operator === 'CTB') {
+          const res = await fetch(API.CTB.routeStops(routeObj.route, routeObj.bound));
+          const json = await res.json();
+          const rawList = json.data || [];
+
+          stops = await Promise.all(
+            rawList.map(async (item, idx) => {
+              let cached = state.ctbStopsMap.get(item.stop);
+              if (!cached) {
+                try {
+                  const sRes = await fetch(API.CTB.stopInfo(item.stop));
+                  const sJson = await sRes.json();
+                  const d = sJson.data || {};
+                  cached = {
+                    name_en: d.name_en || item.stop,
+                    name_tc: d.name_tc || item.stop,
+                  };
+                  state.ctbStopsMap.set(item.stop, cached);
+                } catch (_) {
+                  cached = { name_en: item.stop, name_tc: item.stop };
+                }
+              }
+              return {
+                seq: Number(item.seq) || idx + 1,
+                stopId: item.stop,
+                nameEn: cached.name_en,
+                nameTc: cached.name_tc,
+              };
+            })
+          );
+        }
+
+        state.activeStops = stops;
+        renderStopsTimeline();
+
+        // Auto-fetch ETAs for any already-expanded stops
+        stops.forEach((s) => {
+          if (state.expandedStopIds.has(s.stopId)) {
+            fetchEtaForStop(routeObj, s.stopId, false);
+          }
+        });
+      } catch (err) {
+        state.activeStops = [];
+        dom.stopsTimelineContainer.innerHTML = `
+          <div class="p-8 text-center text-xs text-rose-500">
+            Unable to load stops for this route.
+          </div>`;
+      }
+    }
+
+    function isStopBookmarked(routeKey, stopId) {
+      return state.savedStops.some((b) => b.routeKey === routeKey && b.stopId === stopId);
+    }
+
+    function toggleBookmark(stopObj) {
+      const r = state.selectedRoute;
+      if (!r) return;
+
+      const existingIdx = state.savedStops.findIndex(
+        (b) => b.routeKey === r.key && b.stopId === stopObj.stopId
+      );
+
+      if (existingIdx >= 0) {
+        state.savedStops.splice(existingIdx, 1);
+        state.stopAlerts.delete(`${r.key}_${stopObj.stopId}`);
+        showToast(t('unbookmarkedToast'), 'info');
+      } else {
+        state.savedStops.unshift({
+          routeKey: r.key,
+          operator: r.operator,
+          route: r.route,
+          bound: r.bound,
+          serviceType: r.serviceType,
+          destEn: r.destEn,
+          destTc: r.destTc,
+          stopId: stopObj.stopId,
+          stopNameEn: stopObj.nameEn,
+          stopNameTc: stopObj.nameTc,
+        });
+        showToast(t('bookmarkedToast'), 'success');
+      }
+
+      localStorage.setItem('hkbus_saved_stops', JSON.stringify(state.savedStops));
+      updateSavedBadge();
+      renderStopsTimeline();
+      if (state.activeTab === 'saved') renderSavedList();
+    }
+
+    function updateSavedBadge() {
+      dom.savedCountBadge.textContent = String(state.savedStops.length);
+    }
+
+    function renderStopsTimeline() {
+      const r = state.selectedRoute;
+      if (!r) return;
+
+      const q = state.stopFilterQuery.trim().toLowerCase();
+      const visibleStops = state.activeStops.filter((s) => {
+        if (!q) return true;
+        return (
+          s.nameEn.toLowerCase().includes(q) ||
+          s.nameTc.toLowerCase().includes(q) ||
+          String(s.seq).includes(q)
+        );
+      });
+
+      if (visibleStops.length === 0) {
+        dom.stopsTimelineContainer.innerHTML = `
+          <div class="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+            No stops match your filter.
+          </div>`;
+        return;
+      }
+
+      dom.stopsTimelineContainer.innerHTML = visibleStops
+        .map((stop) => {
+          const isExpanded = state.expandedStopIds.has(stop.stopId);
+          const bookmarked = isStopBookmarked(r.key, stop.stopId);
+          const stopName = state.lang === 'en' ? stop.nameEn : stop.nameTc;
+          const cacheKey = `${r.key}_${stop.stopId}`;
+          const etaState = state.stopEtasMap.get(cacheKey);
+
+          let etaPanelHtml = '';
+          if (isExpanded) {
+            if (!etaState || etaState.loading) {
+              etaPanelHtml = `
+                <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400">
+                  ${t('loadingEta')}
+                </div>`;
+            } else if (!etaState.list || etaState.list.length === 0) {
+              etaPanelHtml = `
+                <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400">
+                  ${t('noEta')}
+                </div>`;
+            } else {
+              etaPanelHtml = `
+                <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                  ${etaState.list
+                    .slice(0, 3)
+                    .map((item, idx) => {
+                      const info = formatEtaTime(item.eta);
+                      const rmk = state.lang === 'en' ? item.rmk_en : item.rmk_tc;
+                      return `
+                        <div class="flex items-center justify-between text-xs py-1 px-2.5 rounded-lg ${
+                          idx === 0
+                            ? 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold'
+                            : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300'
+                        }">
+                          <div class="flex items-center gap-2">
+                            <span class="w-4 text-[11px] font-bold opacity-60">#${idx + 1}</span>
+                            <span>${info.countdown}</span>
+                            ${rmk ? `<span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-200/70 dark:bg-slate-700 font-normal">${escapeHtml(rmk)}</span>` : ''}
+                          </div>
+                          <span class="font-mono text-[11px] opacity-80">${info.clock}</span>
+                        </div>`;
+                    })
+                    .join('')}
+                </div>`;
+            }
+          }
+
+          return `
+            <div class="rounded-xl border transition p-3 ${
+              isExpanded
+                ? 'border-blue-400 dark:border-blue-600 bg-blue-50/20 dark:bg-blue-950/20 shadow-xs'
+                : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+            }">
+              <div class="flex items-center justify-between gap-2">
+                <button type="button" data-toggle-stop="${escapeHtml(stop.stopId)}" class="flex items-center gap-3 min-w-0 flex-1 text-left">
+                  <span class="w-7 h-7 rounded-full text-xs font-extrabold flex items-center justify-center shrink-0 ${
+                    isExpanded
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                  }">
+                    ${stop.seq}
+                  </span>
+                  <span class="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                    ${escapeHtml(stopName)}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  data-bookmark-stop="${escapeHtml(stop.stopId)}"
+                  title="Bookmark stop"
+                  class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 ${
+                    bookmarked ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'
+                  }"
+                >
+                  <svg class="w-4 h-4" fill="${bookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
+              </div>
+              ${etaPanelHtml}
+            </div>`;
+        })
+        .join('');
+
+      dom.stopsTimelineContainer.querySelectorAll('[data-toggle-stop]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const stopId = btn.dataset.toggleStop;
+          if (state.expandedStopIds.has(stopId)) {
+            state.expandedStopIds.delete(stopId);
+            renderStopsTimeline();
+          } else {
+            state.expandedStopIds.add(stopId);
+            renderStopsTimeline();
+            fetchEtaForStop(r, stopId, false);
+          }
+        });
+      });
+
+      dom.stopsTimelineContainer.querySelectorAll('[data-bookmark-stop]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const stopObj = state.activeStops.find((s) => s.stopId === btn.dataset.bookmarkStop);
+          if (stopObj) toggleBookmark(stopObj);
+        });
+      });
+    }
+
+    // --- Saved Bookmarks Tab Rendering ---
+    function renderSavedList() {
+      updateSavedBadge();
+      if (state.savedStops.length === 0) {
+        dom.savedListContainer.innerHTML = `
+          <div class="text-center py-10 px-4">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </div>
+            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${t('savedEmptyTitle')}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">${t('savedEmptyDesc')}</p>
+          </div>`;
+        return;
+      }
+
+      dom.savedListContainer.innerHTML = state.savedStops
+        .map((item, idx) => {
+          const style = getOperatorStyle(item.operator);
+          const stopName = state.lang === 'en' ? item.stopNameEn : item.stopNameTc;
+          const destName = state.lang === 'en' ? item.destEn : item.destTc;
+          const cacheKey = `${item.routeKey}_${item.stopId}`;
+          const etaState = state.stopEtasMap.get(cacheKey);
+          const activeAlert = state.stopAlerts.get(cacheKey);
+
+          let etaSummaryHtml = `<span class="text-xs text-slate-400">${t('loadingEta')}</span>`;
+          if (etaState && !etaState.loading) {
+            if (!etaState.list || etaState.list.length === 0) {
+              etaSummaryHtml = `<span class="text-xs text-slate-400">${t('noEta')}</span>`;
+            } else {
+              etaSummaryHtml = etaState.list
+                .slice(0, 3)
+                .map((e, i) => {
+                  const info = formatEtaTime(e.eta);
+                  return `<span class="inline-flex items-baseline gap-1 px-2 py-0.5 rounded-lg text-xs font-bold ${
+                    i === 0
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                  }">${info.countdown} <span class="text-[10px] font-normal opacity-75">(${info.clock})</span></span>`;
+                })
+                .join(' ');
+            }
+          }
+
+          const alertButtonsHtml = [1, 3, 5]
+            .map((mins) => {
+              const isSelected = activeAlert && activeAlert.mins === mins;
+              return `
+                <button
+                  type="button"
+                  data-saved-alert-idx="${idx}"
+                  data-alert-mins="${mins}"
+                  class="px-2 py-1 rounded-lg text-[11px] font-bold transition ${
+                    isSelected
+                      ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-300 dark:ring-amber-700'
+                      : 'bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 dark:bg-slate-800 dark:hover:bg-amber-950/60 dark:text-slate-300 dark:hover:text-amber-300'
+                  }"
+                  title="Notify ${mins} min before arrival"
+                >
+                  ${mins}m
+                </button>`;
+            })
+            .join('');
+
+          return `
+            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:border-blue-400 dark:hover:border-blue-600 transition">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1" data-open-saved-idx="${idx}">
+                  <span class="px-2.5 py-1 rounded-lg text-xs font-extrabold shrink-0 ${style.badge}">${escapeHtml(item.route)}</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(stopName)}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate">${t('toPrefix')}${escapeHtml(destName)}</p>
+                  </div>
+                </div>
+                <button type="button" data-remove-saved-idx="${idx}" title="Remove bookmark" class="p-1.5 rounded-lg text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Live ETAs Row -->
+              <div class="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-1.5">
+                ${etaSummaryHtml}
+              </div>
+
+              <!-- 1m / 3m / 5m Arrival Alert Row -->
+              <div class="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                  <svg class="w-3.5 h-3.5 ${activeAlert ? 'text-amber-500 animate-bounce' : 'text-slate-400'}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span>${t('alertLabel')}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  ${alertButtonsHtml}
+                </div>
+              </div>
+            </div>`;
+        })
+        .join('');
+
+      // Attach listeners for Saved Cards
+      dom.savedListContainer.querySelectorAll('[data-open-saved-idx]').forEach((el) => {
+        el.addEventListener('click', () => {
+          const item = state.savedStops[Number(el.dataset.openSavedIdx)];
+          if (!item) return;
+          const matchedRoute = state.allRoutes.find((r) => r.key === item.routeKey);
+          if (matchedRoute) {
+            state.expandedStopIds.add(item.stopId);
+            selectRoute(matchedRoute);
+          } else {
+            showToast('Route details unavailable offline', 'error');
+          }
+        });
+      });
+
+      dom.savedListContainer.querySelectorAll('[data-remove-saved-idx]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = Number(btn.dataset.removeSavedIdx);
+          const removed = state.savedStops[idx];
+          if (removed) {
+            state.stopAlerts.delete(`${removed.routeKey}_${removed.stopId}`);
+          }
+          state.savedStops.splice(idx, 1);
+          localStorage.setItem('hkbus_saved_stops', JSON.stringify(state.savedStops));
+          renderSavedList();
+          if (state.selectedRoute) renderStopsTimeline();
+          showToast(t('unbookmarkedToast'), 'info');
+        });
+      });
+
+      dom.savedListContainer.querySelectorAll('[data-saved-alert-idx]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = Number(btn.dataset.savedAlertIdx);
+          const mins = Number(btn.dataset.alertMins);
+          const item = state.savedStops[idx];
+          if (!item) return;
+
+          const cacheKey = `${item.routeKey}_${item.stopId}`;
+          const existing = state.stopAlerts.get(cacheKey);
+          if (existing && existing.mins === mins) {
+            state.stopAlerts.delete(cacheKey);
+            showToast(t('alertClearedToast'), 'info');
+          } else {
+            state.stopAlerts.set(cacheKey, { mins, triggeredForTs: null });
+            showToast(t('alertSetToast')(mins, item.route), 'success');
+            fetchEtaForStop(item, item.stopId, true);
+          }
+          renderSavedList();
+        });
+      });
+    }
+
+    // --- Live ETA Fetching & Arrival Alert Monitoring ---
+    async function fetchEtaForStop(routeOrBookmark, stopId, silent = false) {
+      const routeKey = routeOrBookmark.key || routeOrBookmark.routeKey;
+      const cacheKey = `${routeKey}_${stopId}`;
+
+      if (!silent) {
+        state.stopEtasMap.set(cacheKey, { loading: true, list: [], error: null });
+        if (state.selectedRoute && state.selectedRoute.key === routeKey) {
+          renderStopsTimeline();
+        }
+      }
+
+      try {
+        let etaList = [];
+        if (routeOrBookmark.operator === 'KMB') {
+          const serviceType = routeOrBookmark.serviceType || '1';
+          const res = await fetch(API.KMB.eta(stopId, routeOrBookmark.route, serviceType));
+          const json = await res.json();
+          const dirCode = routeOrBookmark.bound === 'outbound' ? 'O' : 'I';
+          etaList = (json.data || [])
+            .filter((item) => item.eta && (!item.dir || item.dir === dirCode))
+            .map((item) => ({
+              eta: item.eta,
+              rmk_en: item.rmk_en || '',
+              rmk_tc: item.rmk_tc || '',
+            }));
+        } else if (routeOrBookmark.operator === 'CTB') {
+          const res = await fetch(API.CTB.eta(stopId, routeOrBookmark.route));
+          const json = await res.json();
+          const dirCode = routeOrBookmark.bound === 'outbound' ? 'O' : 'I';
+          etaList = (json.data || [])
+            .filter((item) => item.eta && (!item.dir || item.dir === dirCode))
+            .map((item) => ({
+              eta: item.eta,
+              rmk_en: item.rmk_en || '',
+              rmk_tc: item.rmk_tc || '',
+            }));
+        }
+
+        etaList.sort((a, b) => new Date(a.eta) - new Date(b.eta));
+        state.stopEtasMap.set(cacheKey, {
+          loading: false,
+          list: etaList,
+          error: null,
+          updatedAt: Date.now(),
+        });
+
+        // Evaluate armed 1m / 3m / 5m arrival alerts
+        checkStopArrivalAlerts(cacheKey, routeOrBookmark, stopId, etaList);
+      } catch (err) {
+        state.stopEtasMap.set(cacheKey, {
+          loading: false,
+          list: [],
+          error: err.message,
+          updatedAt: Date.now(),
+        });
+      }
+
+      if (state.selectedRoute && state.selectedRoute.key === routeKey) {
+        renderStopsTimeline();
+      }
+      if (state.activeTab === 'saved') {
+        renderSavedList();
+      }
+    }
+
+    function checkStopArrivalAlerts(cacheKey, routeOrBookmark, stopId, etaList) {
+      const alertCfg = state.stopAlerts.get(cacheKey);
+      if (!alertCfg || !etaList || etaList.length === 0) return;
+
+      const nextBus = etaList[0];
+      const diffMins = Math.max(0, Math.round((new Date(nextBus.eta) - Date.now()) / 60000));
+
+      if (diffMins <= alertCfg.mins && alertCfg.triggeredForTs !== nextBus.eta) {
+        alertCfg.triggeredForTs = nextBus.eta;
+        state.stopAlerts.set(cacheKey, alertCfg);
+
+        const stopName =
+          state.lang === 'en'
+            ? routeOrBookmark.stopNameEn || stopId
+            : routeOrBookmark.stopNameTc || stopId;
+
+        showToast(t('busArrivingAlert')(routeOrBookmark.route, stopName, diffMins), 'success');
+        triggerAlertChime();
+        if (navigator.vibrate) {
+          navigator.vibrate([200, 100, 200]);
+        }
+      }
+    }
+
+    function triggerAlertChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1174.66, ctx.currentTime + 0.18);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.45);
+      } catch (_) {
+        // Ignore audio autoplay restriction if user hasn't interacted
+      }
+    }
+
+    function formatEtaTime(isoString) {
+      const target = new Date(isoString);
+      const now = new Date();
+      const diffMs = target - now;
+      const diffMins = Math.round(diffMs / 60000);
+
+      const hours = String(target.getHours()).padStart(2, '0');
+      const minutes = String(target.getMinutes()).padStart(2, '0');
+      const clock = `${hours}:${minutes}`;
+
+      let countdown = '';
+      if (diffMins <= 0) {
+        countdown = t('arriving');
+      } else {
+        countdown = `${diffMins} ${t('min')}`;
+      }
+
+      return { countdown, clock, diffMins };
+    }
+
+    // --- Nearby GPS Stops Discovery ---
+    function getHaversineMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = (deg) => (deg * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function findNearbyStops() {
+      if (!navigator.geolocation) {
+        dom.nearbyStatusText.textContent = t('gpsDenied');
+        return;
+      }
+
+      dom.nearbyStatusText.textContent = t('locatingGps');
+      dom.nearbyListContainer.innerHTML = `
+        <div class="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+          ${t('locatingGps')}
+        </div>`;
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          state.userCoords = { lat: latitude, long: longitude };
+
+          const nearby = [];
+          state.kmbStopsMap.forEach((stop, stopId) => {
+            if (!stop.lat || !stop.long) return;
+            const dist = getHaversineMeters(latitude, longitude, stop.lat, stop.long);
+            if (dist <= 600) {
+              nearby.push({ stopId, ...stop, distance: Math.round(dist) });
+            }
+          });
+
+          nearby.sort((a, b) => a.distance - b.distance);
+          const topStops = nearby.slice(0, 12);
+
+          if (topStops.length === 0) {
+            dom.nearbyStatusText.textContent = t('noNearbyStops');
+            dom.nearbyListContainer.innerHTML = `
+              <div class="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                ${t('noNearbyStops')}
+              </div>`;
+            return;
+          }
+
+          dom.nearbyStatusText.textContent = `${topStops.length} stops within 600m`;
+          renderNearbyStops(topStops);
+        },
+        () => {
+          dom.nearbyStatusText.textContent = t('gpsDenied');
+          dom.nearbyListContainer.innerHTML = `
+            <div class="p-6 text-center text-xs text-rose-500">
+              ${t('gpsDenied')}
+            </div>`;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    async function renderNearbyStops(stops) {
+      dom.nearbyListContainer.innerHTML = stops
+        .map((stop) => {
+          const name = state.lang === 'en' ? stop.name_en : stop.name_tc;
+          return `
+            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="min-w-0">
+                  <p class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(name)}</p>
+                  <span class="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">KMB / LWB</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shrink-0">
+                  ${stop.distance}m
+                </span>
+              </div>
+              <div id="nearby-etas-${stop.stopId}" class="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400">
+                ${t('loadingEta')}
+              </div>
+            </div>`;
+        })
+        .join('');
+
+      for (const stop of stops) {
+        try {
+          const res = await fetch(API.KMB.stopEta(stop.stopId));
+          const json = await res.json();
+          const byRoute = new Map();
+          (json.data || []).forEach((item) => {
+            if (!item.eta) return;
+            if (!byRoute.has(item.route)) {
+              byRoute.set(item.route, item);
+            }
+          });
+
+          const container = document.getElementById(`nearby-etas-${stop.stopId}`);
+          if (!container) continue;
+
+          if (byRoute.size === 0) {
+            container.innerHTML = `<span class="text-xs text-slate-400">${t('noEta')}</span>`;
+            continue;
+          }
+
+          container.innerHTML = Array.from(byRoute.values())
+            .slice(0, 8)
+            .map((item) => {
+              const info = formatEtaTime(item.eta);
+              return `
+                <button type="button" data-nearby-route="${escapeHtml(item.route)}" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-100 dark:bg-slate-800 dark:hover:bg-rose-950/60 transition">
+                  <span class="font-extrabold text-rose-600 dark:text-rose-400">${escapeHtml(item.route)}</span>
+                  <span class="font-semibold text-slate-700 dark:text-slate-200">${info.countdown}</span>
+                </button>`;
+            })
+            .join('');
+
+          container.querySelectorAll('[data-nearby-route]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const routeNum = btn.dataset.nearbyRoute;
+              const match = state.allRoutes.find(
+                (r) => r.operator === 'KMB' && r.route === routeNum
+              );
+              if (match) selectRoute(match);
+            });
+          });
+        } catch (_) {
+          const container = document.getElementById(`nearby-etas-${stop.stopId}`);
+          if (container) container.innerHTML = `<span class="text-xs text-slate-400">${t('noEta')}</span>`;
+        }
+      }
+    }
+
+    // --- Auto-Refresh Timer & Refresh Triggers ---
+    function startAutoRefreshLoop() {
+      if (state.timerId) clearInterval(state.timerId);
+      state.timerId = setInterval(() => {
+        if (!state.autoRefreshEnabled) return;
+        state.countdown -= 1;
+        if (state.countdown <= 0) {
+          state.countdown = 30;
+          triggerEtaRefresh(true);
+        }
+        dom.autoRefreshCountdown.textContent = `${state.countdown}s`;
+      }, 1000);
+    }
+
+    function triggerEtaRefresh(silent = false) {
+      state.countdown = 30;
+      dom.autoRefreshCountdown.textContent = '30s';
+
+      if (!silent) {
+        dom.refreshSpinnerIcon.classList.add('animate-spin');
+        setTimeout(() => dom.refreshSpinnerIcon.classList.remove('animate-spin'), 600);
+      }
+
+      if (state.selectedRoute && state.expandedStopIds.size > 0) {
+        state.expandedStopIds.forEach((stopId) => {
+          fetchEtaForStop(state.selectedRoute, stopId, silent);
+        });
+      }
+
+      // Refresh any bookmarked stops that are either viewed in Saved tab or have an active 1m/3m/5m alert
+      state.savedStops.forEach((bookmark) => {
+        const cacheKey = `${bookmark.routeKey}_${bookmark.stopId}`;
+        if (state.activeTab === 'saved' || state.stopAlerts.has(cacheKey)) {
+          fetchEtaForStop(bookmark, bookmark.stopId, silent);
+        }
+      });
+    }
+
+    // --- Event Listeners & App Bootstrapping ---
+    function bindEvents() {
+      dom.apiStatusBtn.addEventListener('click', () => {
+        dom.apiDiagnosticsDrawer.classList.toggle('hidden');
+      });
+
+      dom.reloadApisBtn.addEventListener('click', () => {
+        initializeAllFeeds(true);
+      });
+
+      dom.langToggleBtn.addEventListener('click', () => {
+        state.lang = state.lang === 'en' ? 'tc' : 'en';
+        localStorage.setItem('hkbus_lang', state.lang);
+        applyTranslations();
+        renderRouteList();
+        if (state.selectedRoute) {
+          renderActiveRouteHeader();
+          renderStopsTimeline();
+        }
+        if (state.activeTab === 'saved') renderSavedList();
+      });
+
+      dom.themeToggleBtn.addEventListener('click', () => {
+        state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('hkbus_theme', state.theme);
+        applyTheme();
+      });
+
+      dom.tabSearchBtn.addEventListener('click', () => switchTab('search'));
+      dom.tabNearbyBtn.addEventListener('click', () => {
+        switchTab('nearby');
+        if (!state.userCoords) findNearbyStops();
+      });
+      dom.tabSavedBtn.addEventListener('click', () => {
+        switchTab('saved');
+        triggerEtaRefresh(false);
+      });
+
+      dom.locateMeBtn.addEventListener('click', findNearbyStops);
+
+      dom.routeSearchInput.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        dom.clearSearchBtn.classList.toggle('hidden', !state.searchQuery);
+        filterAndRenderRoutes();
+      });
+
+      dom.clearSearchBtn.addEventListener('click', () => {
+        state.searchQuery = '';
+        dom.routeSearchInput.value = '';
+        dom.clearSearchBtn.classList.add('hidden');
+        filterAndRenderRoutes();
+      });
+
+      document.querySelectorAll('.quick-route-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          const q = chip.dataset.quickRoute;
+          state.searchQuery = q;
+          dom.routeSearchInput.value = q;
+          dom.clearSearchBtn.classList.remove('hidden');
+          filterAndRenderRoutes();
+        });
+      });
+
+      document.querySelectorAll('.op-filter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.operatorFilter = btn.dataset.opFilter;
+          document.querySelectorAll('.op-filter-btn').forEach((b) => {
+            b.classList.remove(
+              'active',
+              'bg-slate-900',
+              'text-white',
+              'dark:bg-white',
+              'dark:text-slate-900'
+            );
+          });
+          btn.classList.add(
+            'active',
+            'bg-slate-900',
+            'text-white',
+            'dark:bg-white',
+            'dark:text-slate-900'
+          );
+          filterAndRenderRoutes();
+        });
+      });
+
+      dom.stopFilterInput.addEventListener('input', (e) => {
+        state.stopFilterQuery = e.target.value;
+        renderStopsTimeline();
+      });
+
+      dom.switchDirectionBtn.addEventListener('click', () => {
+        if (!state.selectedRoute) return;
+        const opposite = getOppositeDirectionRoute(state.selectedRoute);
+        if (opposite) selectRoute(opposite);
+      });
+
+      dom.manualRefreshEtaBtn.addEventListener('click', () => triggerEtaRefresh(false));
+
+      dom.toggleAutoRefreshBtn.addEventListener('click', () => {
+        state.autoRefreshEnabled = !state.autoRefreshEnabled;
+        dom.autoRefreshDot.classList.toggle('bg-emerald-500', state.autoRefreshEnabled);
+        dom.autoRefreshDot.classList.toggle('live-dot', state.autoRefreshEnabled);
+        dom.autoRefreshDot.classList.toggle('bg-slate-400', !state.autoRefreshEnabled);
+        showToast(
+          state.autoRefreshEnabled ? t('autoRefreshResumed') : t('autoRefreshPaused'),
+          'info'
+        );
+      });
+
+      dom.refreshAllSavedBtn.addEventListener('click', () => triggerEtaRefresh(false));
+    }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      const tabs = [
+        { id: 'search', btn: dom.tabSearchBtn, panel: dom.searchPanelView },
+        { id: 'nearby', btn: dom.tabNearbyBtn, panel: dom.nearbyPanelView },
+        { id: 'saved', btn: dom.tabSavedBtn, panel: dom.savedPanelView },
+      ];
+
+      tabs.forEach(({ id, btn, panel }) => {
+        const isActive = id === tab;
+        panel.classList.toggle('hidden', !isActive);
+        panel.classList.toggle('flex', isActive);
+        if (isActive) {
+          btn.classList.add('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+          btn.classList.remove('text-slate-600', 'dark:text-slate-400');
+        } else {
+          btn.classList.remove('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+          btn.classList.add('text-slate-600', 'dark:text-slate-400');
+        }
+      });
+
+      if (tab === 'saved') {
+        renderSavedList();
+      }
+    }
+
+    // Boot Application on Window Load
+    window.addEventListener('DOMContentLoaded', () => {
+      applyTheme();
+      applyTranslations();
+      updateSavedBadge();
+      bindEvents();
+      startAutoRefreshLoop();
+      initializeAllFeeds(false);
+    });
+  </script>
+</body>
+</html>
