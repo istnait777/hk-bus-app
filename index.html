@@ -38,6 +38,15 @@
       <div id="savedList"></div>
     </section>
 
+    <!-- Tab 4: Time Remain Countdown View -->
+    <section id="remainSection" class="hidden">
+      <div class="section-header">
+        <strong>Bus Time Remaining</strong>
+        <span id="remainStatus">Live</span>
+      </div>
+      <div id="remainContent"></div>
+    </section>
+
     <!-- Route Detail: Stops & Live ETAs -->
     <section id="stopSection" class="hidden">
       <div class="route-banner">
@@ -48,6 +57,14 @@
       <div id="stopList" class="stop-list"></div>
     </section>
   </main>
+
+  <!-- Floating Quick "Time Remain" Bar Above Bottom Nav -->
+  <div id="floatingRemainBar" class="floating-remain hidden">
+    <div id="floatingRemainText" class="floating-remain-info">
+      <strong>--</strong> • Tap a time badge to track
+    </div>
+    <button id="floatingClearBtn" class="floating-close" title="Stop tracking">✕</button>
+  </div>
 
   <!-- Mobile Bottom Navigation Bar -->
   <nav class="bottom-nav">
@@ -62,6 +79,10 @@
     <button id="tabSaved" class="nav-btn">
       <span class="nav-icon">⭐</span>
       <span>Saved</span>
+    </button>
+    <button id="tabRemain" class="nav-btn">
+      <span class="nav-icon">⏱️</span>
+      <span>Remaining</span>
     </button>
   </nav>
 
