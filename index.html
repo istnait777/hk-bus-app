@@ -13,7 +13,7 @@
 <body>
   <header>
     <h1>HK Bus Live ETA</h1>
-    <input type="search" id="routeInput" placeholder="Search route (e.g. 1A, 272X, 960)..." autocomplete="off" />
+    <input type="search" id="routeInput" placeholder="Search route (e.g. 1A, 960, 290X)..." autocomplete="off" />
   </header>
 
   <main>
@@ -38,7 +38,7 @@
       <div id="savedList"></div>
     </section>
 
-    <!-- Route Detail: Stops & Remaining Time -->
+    <!-- Route Detail: Stops & Live ETAs -->
     <section id="stopSection" class="hidden">
       <div class="route-banner">
         <button id="backBtn">← Back</button>
@@ -49,6 +49,7 @@
     </section>
   </main>
 
+  <!-- Mobile Bottom Navigation Bar -->
   <nav class="bottom-nav">
     <button id="tabRoutes" class="nav-btn active">
       <span class="nav-icon">🚌</span>
