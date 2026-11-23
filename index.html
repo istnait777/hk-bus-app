@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#d32f2f" />
+  <title>HK Bus ETA</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>HK Bus Live ETA</h1>
+    <input type="search" id="routeInput" placeholder="Search route (e.g. 1A, 960, 290X)..." autocomplete="off" />
+  </header>
+
+  <main>
+    <!-- Tab 1: Route Search Results -->
+    <section id="routeList" class="card-list"></section>
+
+    <!-- Tab 2: GPS Nearby Stops -->
+    <section id="nearbySection" class="hidden">
+      <div class="section-header">
+        <strong>Nearby Stops (400m)</strong>
+        <span id="gpsStatus">Locating...</span>
+      </div>
+      <div id="nearbyList"></div>
+    </section>
+
+    <!-- Tab 3: Bookmarked Stops -->
+    <section id="savedSection" class="hidden">
+      <div class="section-header">
+        <strong>Bookmarked Stops</strong>
+        <span id="savedStatus">Auto-refreshing</span>
+      </div>
+      <div id="savedList"></div>
+    </section>
+
+    <!-- Route Detail: Stops & Live ETAs -->
+    <section id="stopSection" class="hidden">
+      <div class="route-banner">
+        <button id="backBtn">← Back</button>
+        <div id="selectedRouteTitle"></div>
+        <span id="refreshStatus">Live</span>
+      </div>
+      <div id="stopList" class="stop-list"></div>
+    </section>
+  </main>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <button id="tabRoutes" class="nav-btn active">
+      <span class="nav-icon">🚌</span>
+      <span>Routes</span>
+    </button>
+    <button id="tabNearby" class="nav-btn">
+      <span class="nav-icon">📍</span>
+      <span>Nearby</span>
+    </button>
+    <button id="tabSaved" class="nav-btn">
+      <span class="nav-icon">⭐</span>
+      <span>Saved</span>
+    </button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
