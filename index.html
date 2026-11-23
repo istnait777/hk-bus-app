@@ -5,66 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#121417" />
-  <title>HK Bus Live Map</title>
+  <meta name="theme-color" content="#d32f2f" />
+  <title>HK Bus ETA</title>
   <link rel="manifest" href="manifest.json" />
-  <!-- Leaflet Map CSS (Free, No API Key Required) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Full-Screen Interactive Dark Map -->
-  <div id="map"></div>
+  <header>
+    <h1>HK Bus Live ETA</h1>
+    <input type="search" id="routeInput" placeholder="Search route (e.g. 1A, 272X, 960)..." autocomplete="off" />
+  </header>
 
-  <!-- Top Floating Active Route Pill -->
-  <div id="topPill" class="top-pill hidden">
-    <span id="pillText">272X • -- min</span>
-    <button id="pillCloseBtn">✕</button>
-  </div>
+  <main>
+    <!-- Tab 1: Route Search Results -->
+    <section id="routeList" class="card-list"></section>
 
-  <!-- Floating Left Quick Action Buttons (Search, Nearby, Saved) -->
-  <div class="map-controls-left">
-    <button id="btnOpenSearch" class="circle-btn" title="Search Route">🔍</button>
-    <button id="btnNearbyGPS" class="circle-btn" title="Nearby Stops">📍</button>
-    <button id="btnOpenSaved" class="circle-btn" title="Saved Stops">⭐</button>
-  </div>
-
-  <!-- Floating Right Re-Center GPS Button -->
-  <div class="map-controls-right">
-    <button id="btnLocateMe" class="circle-btn" title="My Location">➤</button>
-  </div>
-
-  <!-- Search / Nearby / Saved Overlay Drawer -->
-  <div id="drawerOverlay" class="drawer-overlay">
-    <div class="drawer-header">
-      <input type="search" id="routeInput" placeholder="Search route (e.g. 272X, 1A, 960)..." autocomplete="off" />
-      <button id="closeDrawerBtn" class="icon-btn">✕</button>
-    </div>
-    <div class="drawer-tabs">
-      <button id="tabRoutes" class="d-tab active">All Routes</button>
-      <button id="tabNearby" class="d-tab">Nearby (400m)</button>
-      <button id="tabSaved" class="d-tab">Saved (★)</button>
-    </div>
-    <div id="drawerContent" class="drawer-content"></div>
-  </div>
-
-  <!-- Bottom Route & ETA Sheet (Matches Screenshot UI) -->
-  <div id="bottomSheet" class="bottom-sheet hidden">
-    <div class="sheet-header">
-      <div>
-        <div class="sheet-route-num" id="sheetRouteNum">272X</div>
-        <div class="sheet-dest" id="sheetDest">→ Destination</div>
+    <!-- Tab 2: GPS Nearby Stops -->
+    <section id="nearbySection" class="hidden">
+      <div class="section-header">
+        <strong>Nearby Stops (400m)</strong>
+        <span id="gpsStatus">Locating...</span>
       </div>
-      <div class="sheet-actions">
-        <button id="btnSwapDir" class="icon-btn" title="Reverse Direction">⇅</button>
-        <button id="btnCloseSheet" class="icon-btn" title="Close">✕</button>
+      <div id="nearbyList"></div>
+    </section>
+
+    <!-- Tab 3: Bookmarked Stops -->
+    <section id="savedSection" class="hidden">
+      <div class="section-header">
+        <strong>Bookmarked Stops</strong>
+        <span id="savedStatus">Auto-refreshing</span>
       </div>
-    </div>
+      <div id="savedList"></div>
+    </section>
 
-    <div id="sheetStopList" class="sheet-stop-list"></div>
-  </div>
+    <!-- Route Detail: Stops & Remaining Time -->
+    <section id="stopSection" class="hidden">
+      <div class="route-banner">
+        <button id="backBtn">← Back</button>
+        <div id="selectedRouteTitle"></div>
+        <span id="refreshStatus">Live</span>
+      </div>
+      <div id="stopList" class="stop-list"></div>
+    </section>
+  </main>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <nav class="bottom-nav">
+    <button id="tabRoutes" class="nav-btn active">
+      <span class="nav-icon">🚌</span>
+      <span>Routes</span>
+    </button>
+    <button id="tabNearby" class="nav-btn">
+      <span class="nav-icon">📍</span>
+      <span>Nearby</span>
+    </button>
+    <button id="tabSaved" class="nav-btn">
+      <span class="nav-icon">⭐</span>
+      <span>Saved</span>
+    </button>
+  </nav>
+
   <script src="app.js"></script>
 </body>
 </html>
